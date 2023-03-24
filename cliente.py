@@ -3,13 +3,13 @@ __author__ = 'Lucas Monteiro'
 
 import os, socket
 
-HOST = 'localhost'  # EndereÁo IP
-PORT = 2000         # Porta utilizada para conex„o
-BUFFER_SIZE = 1460  # Tamanho do buffer para recepÁ„o dos dados
+HOST = 'localhost'  # Endere√ßo IP
+PORT = 2000         # Porta utilizada para conex√£o
+BUFFER_SIZE = 1500  # Tamanho do buffer para recep√ß√£o dos dados
 
 def menu_principal():
     print('\n--------------- SERVIDOR DE ARQUIVOS ---------------\n')
-    print('Realize o seu download ou faÁa um upload caso possua uma senha.')
+    print('Realize o seu download ou fa√ßa um upload caso possua uma senha.')
     print('0- Sair')
     print('1- Realizar Download')
     print('2- Realizar Upload')
@@ -22,16 +22,25 @@ def receber_pacotes(s, caminho_arquivo):
 
     # Receber arquivo
     with open(caminho_arquivo, "wb") as f:
-        num_seq = 0
+        num_seq_aux = 0
         recebidos = 0
         while recebidos < tamanho_arquivo:
-            dados, addr = s.recvfrom(BUFFER_SIZE)
-            f.write(dados)
-            recebidos += len(dados)
+            # Receber o pacote
+            pacote, addr = s.recvfrom(BUFFER_SIZE)
 
-            # Enviar confirmaÁ„o
-            s.sendto(str(num_seq).encode(), addr)
-            num_seq += 1
+            # Retira o n√∫mero de sequ√™ncia do pacote
+            num_seq, dados = pacote.split(b'|', 1)
+
+            if int(num_seq) == num_seq_aux:
+                # Salva os dados no arquivo
+                f.write(dados)
+                recebidos += len(dados)
+                # Envia a confirma√ß√£o de recebimento com o n√∫mero de sequ√™ncia correto
+                num_seq_aux += 1
+                s.sendto(num_seq, addr)
+            else:
+                # Envia a confirma√ß√£o de recebimento do √∫ltimo pacote recebido
+                s.sendto(str(num_seq_aux).encode(), addr)
         print('\nBytes recebidos:', recebidos)
 
 def main():
@@ -39,7 +48,7 @@ def main():
     try:
         while True:
             menu_principal()
-            opcao = input('Digite a sua opÁ„o: ')
+            opcao = input('Digite a sua op√ß√£o: ')
             s.sendto(opcao.encode(), (HOST, PORT))
             if opcao.isdigit():
                 opcao = int(opcao)
@@ -53,7 +62,7 @@ def main():
                     print(lista_arquivos)
 
                     # Solicitar nome do arquivo
-                    nome_arquivo = input("\nDigite o nome do arquivo que vocÍ deseja fazer o download: ")
+                    nome_arquivo = input("\nDigite o nome do arquivo que voc√™ deseja fazer o download: ")
                     
                     # Enviar nome do arquivo
                     s.sendto(nome_arquivo.encode(), (HOST, PORT))
@@ -74,7 +83,7 @@ def main():
 
                     if resposta == "Senha correta":
                         # Solicitar nome do arquivo
-                        nome_arquivo = input("\nDigite o nome do arquivo que vocÍ deseja fazer o upload: ")
+                        nome_arquivo = input("\nDigite o nome do arquivo que voc√™ deseja fazer o upload: ")
                         
                         # Enviar nome do arquivo
                         s.sendto(nome_arquivo.encode(), (HOST, PORT))
@@ -88,14 +97,14 @@ def main():
                     else:
                         print(resposta)
                 else:
-                    print('OpÁ„o inv·lida! Digite o n˙mero da opÁ„o que vocÍ deseja.')
+                    print('Op√ß√£o inv√°lida! Digite o n√∫mero da op√ß√£o que voc√™ deseja.')
             else:
-                print('OpÁ„o inv·lida! Digite o n˙mero da opÁ„o que vocÍ deseja.')
+                print('Op√ß√£o inv√°lida! Digite o n√∫mero da op√ß√£o que voc√™ deseja.')
         # Fechar socket
         print('\nEncerrando...')
         s.close()
     except Exception as error:
-        print('Erro na conex„o com o servidor!')
+        print('Erro na conex√£o com o servidor!')
         print(error)
         s.close()
         return
