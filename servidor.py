@@ -3,9 +3,9 @@ __author__ = 'Lucas Monteiro'
 
 import os, socket
 
-HOST = 'localhost'  # EndereÁo IP
-PORT = 2000         # Porta utilizada para receber conexıes
-BUFFER_SIZE = 1460  # Tamanho do buffer para recepÁ„o dos dados
+HOST = 'localhost'  # Endere√ßo IP
+PORT = 2000         # Porta utilizada para receber conex√µes
+BUFFER_SIZE = 1460  # Tamanho do buffer para recep√ß√£o dos dados
 
 CAMINHO_SERVIDOR = 'servidor/'
 SENHA_CORRETA = '1234'
@@ -23,13 +23,16 @@ def enviar_pacotes(s, addr, caminho_arquivo):
             if not dados:
                 break
 
-            # Enviando pacote
-            s.sendto(dados, addr)
+            # Adiciona o n√∫mero de sequ√™ncia ao pacote
+            pacote = str(num_seq).encode() + b'|' + dados
 
-            # Esperar confirmaÁ„o - Tempo limite de 5 segundos
+            # Enviando pacote
+            s.sendto(pacote, addr)
+
+            # Esperar confirma√ß√£o - Tempo limite de 1 segundos
             ack = -1
             while num_seq != ack:
-                s.settimeout(5)
+                s.settimeout(1)
                 try:
                     ack, addr = s.recvfrom(BUFFER_SIZE)
                     if ack.decode() == str(num_seq):
@@ -37,21 +40,20 @@ def enviar_pacotes(s, addr, caminho_arquivo):
                 except socket.timeout:
                     s.sendto(dados, addr)
 
-            # Atualizar o n˙mero de sequÍncia
+            # Atualizar o n√∫mero de sequ√™ncia
             num_seq += 1
 
 def main():
     print("Servidor UDP iniciado...")
 
     while True:
-        print("Aguardando conexıes...")
-
         # Iniciar servidor
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.bind((HOST, PORT))
         conexao = True
 
-        print(f"Servidor de Arquivos conetado em {HOST}:{PORT}")
+        print(f"Servidor de Arquivos conectado em {HOST}:{PORT}")
+        print("Aguardando conex√µes...")
 
         while conexao:
             try:
@@ -80,7 +82,7 @@ def main():
                             s.sendto("Arquivo encontrado".encode(), addr)
                             enviar_pacotes(s, addr, CAMINHO_SERVIDOR + nome_arquivo)
                         else:
-                            s.sendto("Arquivo n„o encontrado".encode(), addr)
+                            s.sendto("Arquivo n√£o encontrado".encode(), addr)
 
                         s.close()
                         break
@@ -100,14 +102,14 @@ def main():
                                 s.sendto("Arquivo encontrado".encode(), addr)
                                 enviar_pacotes(s, addr, caminho_arquivo)
                             else:
-                                s.sendto("Arquivo n„o encontrado".encode(), addr)
+                                s.sendto("Arquivo n√£o encontrado".encode(), addr)
                         else:
                             s.sendto("Senha incorreta".encode(), addr)
                             
                         s.close()
                         break
             except Exception as error:
-                print('Erro na conex„o com o cliente !')
+                print('Erro na conex√£o com o cliente !')
                 print(error)
                 s.close()
                 return
